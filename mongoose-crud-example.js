@@ -15,8 +15,13 @@ mongoose.connect("mongodb://127.0.0.1:27017/deneme").then(async () => {
   const askQuestion = (quest, errMessage) => {
     return new Promise((resolve, reject) => {
       rl.question(quest, (answer) => {
-        if (answer) resolve(answer);
-        else reject(errMessage);
+        if (answer) {
+          resolve(answer);
+        } else {
+          console.log(errMessage);
+          // Tekrar soru sormak için resolve fonksiyonunu çağır
+          resolve(askQuestion(quest, errMessage));
+        }
       });
     });
   };
@@ -45,7 +50,8 @@ mongoose.connect("mongodb://127.0.0.1:27017/deneme").then(async () => {
           break;
 
         default:
-          //
+          console.log("Geçersiz seçim. ");
+          processRepeat();
           break;
       }
     } catch (error) {
@@ -120,7 +126,7 @@ mongoose.connect("mongodb://127.0.0.1:27017/deneme").then(async () => {
   const updateData = async () => {
     try {
       const askTitle = await askQuestion(
-        "Verinin güncellenecek adını giriniz : ",
+        "Güncellenecek verinin adını giriniz : ",
         "Veri ismi girilemedi"
       );
 
@@ -129,6 +135,15 @@ mongoose.connect("mongodb://127.0.0.1:27017/deneme").then(async () => {
         "Veri tanımı girilemedi"
       );
 
+      // Veriyi bul
+      const existingData = await Data.findOne({ title: askTitle });
+
+      // Eğer veri bulunamazsa hata fırlat
+      if (!existingData) {
+        throw new Error("Belirtilen başlık ile eşleşen veri bulunamadı");
+      }
+
+      // Veriyi güncelle
       await Data.findOneAndUpdate(
         { title: askTitle },
         { $set: { description: getData } },
@@ -138,7 +153,8 @@ mongoose.connect("mongodb://127.0.0.1:27017/deneme").then(async () => {
       console.log("Veri güncellendi");
       processRepeat();
     } catch (error) {
-      console.log("Veri güncellenirken hata oluştu: ", error);
+      console.log("Veri güncellenirken hata oluştu: ", error.message);
+      processRepeat();
     }
   };
 
@@ -149,12 +165,22 @@ mongoose.connect("mongodb://127.0.0.1:27017/deneme").then(async () => {
         "Veri ismi girilemedi"
       );
 
+      // Veriyi bul
+      const existingData = await Data.findOne({ title: askTitle });
+
+      // Eğer veri bulunamazsa hata fırlat
+      if (!existingData) {
+        throw new Error("Belirtilen başlık ile eşleşen veri bulunamadı");
+      }
+
+      // Veriyi sil
       await Data.findOneAndDelete({ title: askTitle });
 
       console.log("Veri silindi");
       processRepeat();
     } catch (error) {
-      console.log("Veri silinirken hata oluştu: ", error);
+      console.log("Veri silinirken hata oluştu: ", error.message);
+      processRepeat();
     }
   };
 
